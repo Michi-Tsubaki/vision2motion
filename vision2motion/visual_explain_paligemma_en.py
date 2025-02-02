@@ -3,13 +3,16 @@
 # SPDX-FileCopyrightText: 2025 Michitoshi Tsubaki <michi.tsubaki.tech@gmail.com>
 # SPDX-License-Identifier: Apache-2.0
 
-"""This node responds with an explanation for the input image in English.
+"""
+This node responds with an explanation for the input image in English.
 
-Parameters:
-    input_topic_name: 'input_topic' (default: 'image_raw')
-    output_topic_name: 'picture_explanation_en' (Explanation in English)
-    debug_output_topic_name: 'picture_explanation_en/debug_image' (Captured image)
-    access_token: 'hf_token' (default: 'default_token')
+Parameters
+----------
+input_topic_name: 'input_topic' (default: 'image_raw')
+output_topic_name: 'picture_explanation_en' (Explanation in English)
+debug_output_topic_name: 'picture_explanation_en/debug_image' (Captured image)
+access_token: 'hf_token' (default: 'default_token')
+
 """
 
 # Standard library imports
@@ -18,23 +21,20 @@ from typing import Optional
 
 # Third-party imports
 import cv2
-import torch
-from PIL import Image as PILImage
-from transformers import (
-    AutoProcessor,
-    PaliGemmaForConditionalGeneration,
-)
-
 # ROS imports
 import rclpy
-from rclpy.node import Node
+import torch
 from cv_bridge import CvBridge
+from PIL import Image as PILImage
+from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import Header, String
+from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 
 
 class PaliGemmaExplainEnNode(Node):
-    """Node for explaining images in English using PaliGemma model.
+    """
+    Node for explaining images in English using PaliGemma model.
 
     This node subscribes to an image topic, processes the image using the PaliGemma
     model, and publishes both the English explanation and the processed image.
@@ -71,7 +71,9 @@ class PaliGemmaExplainEnNode(Node):
         # Publishers and Subscribers
         self._pub = self.create_publisher(String, 'picture_explanation_en', 5)
         self._processed_img_pub = self.create_publisher(
-            Image, 'picture_explanation_en/debug_image', 5
+            Image,
+            'picture_explanation_en/debug_image',
+            5
         )
         self._sub = self.create_subscription(
             Image,
@@ -138,10 +140,12 @@ class PaliGemmaExplainEnNode(Node):
             rclpy.shutdown()
 
     def _image_callback(self, msg: Image) -> None:
-        """Process incoming image and publish results in English.
+        """
+        Process incoming image and publish results in English.
 
         Args:
             msg: Input image message from the subscribed topic.
+
         """
         if not self._processor or not self._model:
             self.get_logger().error('Model not initialized')
@@ -172,7 +176,8 @@ class PaliGemmaExplainEnNode(Node):
 
                 response = response[0][model_inputs['input_ids'].shape[1]:]
                 decoded_response = self._processor.decode(
-                    response, skip_special_tokens=True
+                    response,
+                    skip_special_tokens=True
                 )
 
             # Publish result

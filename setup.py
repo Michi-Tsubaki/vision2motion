@@ -1,6 +1,9 @@
-from setuptools import find_packages, setup
+# Standard library
 import os
 from glob import glob
+
+# Third-party
+from setuptools import find_packages, setup
 
 package_name = 'vision2motion'
 
@@ -12,7 +15,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*')))
+        (os.path.join('share', package_name, 'launch'),
+         glob(os.path.join('launch', '*launch.[pxy][yma]*')))
     ],
     install_requires=[
         'setuptools',

@@ -4,13 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-This node responds with an explanation for the input image in Japanese.
+This node responds with an explanation for the input image in English.
 
 Parameters
 ----------
 input_topic_name: 'input_topic' (default: 'image_raw')
-output_topic_name: 'picture_explanation' (Explanation of captured image)
-debug_output_topic_name: 'picture_explanation/debug_image' (Captured image)
+output_topic_name: 'picture_explanation_en' (Explanation in English)
+debug_output_topic_name: 'picture_explanation_en/debug_image' (Captured image)
 access_token: 'hf_token' (default: 'default_token')
 
 """
@@ -21,30 +21,34 @@ from typing import Optional
 
 # Third-party imports
 import cv2
+import torch
+from PIL import Image as PILImage
+from transformers import (
+    AutoProcessor,
+    PaliGemmaForConditionalGeneration,
+)
+
 # ROS imports
 import rclpy
-import torch
 from cv_bridge import CvBridge
-from PIL import Image as PILImage
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import Header, String
-from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 
 
-class PaliGemmaExplainNode(Node):
+class PaliGemmaExplainEnNode(Node):
     """
-    Node for explaining images using PaliGemma model.
+    Node for explaining images in English using PaliGemma model.
 
     This node subscribes to an image topic, processes the image using the PaliGemma
-    model, and publishes both the explanation and the processed image.
+    model, and publishes both the English explanation and the processed image.
     """
 
     MODEL_ID = 'google/paligemma-3b-mix-224'
 
     def __init__(self):
         """Initialize the node with publishers, subscribers, and model."""
-        super().__init__('paligemma_explain_node')
+        super().__init__('paligemma_explain_en_node')
 
         # Parameters
         self.declare_parameter('input_topic', 'image_raw')
@@ -69,10 +73,10 @@ class PaliGemmaExplainNode(Node):
         self._sequence_num = 1
 
         # Publishers and Subscribers
-        self._pub = self.create_publisher(String, 'picture_explanation', 5)
+        self._pub = self.create_publisher(String, 'picture_explanation_en', 5)
         self._processed_img_pub = self.create_publisher(
             Image,
-            'picture_explanation/debug_image',
+            'picture_explanation_en/debug_image',
             5
         )
         self._sub = self.create_subscription(
@@ -141,7 +145,7 @@ class PaliGemmaExplainNode(Node):
 
     def _image_callback(self, msg: Image) -> None:
         """
-        Process incoming image and publish results.
+        Process incoming image and publish results in English.
 
         Args:
             msg: Input image message from the subscribed topic.
@@ -160,7 +164,7 @@ class PaliGemmaExplainNode(Node):
 
             # Generate explanation
             model_inputs = self._processor(
-                text='<image>画像を説明して下さい',
+                text='<image>Explain this picture in English.',
                 images=pil_image,
                 return_tensors='pt',
                 max_length=100
@@ -226,7 +230,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     try:
-        node = PaliGemmaExplainNode()
+        node = PaliGemmaExplainEnNode()
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
