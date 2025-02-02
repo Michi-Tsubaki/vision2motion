@@ -16,60 +16,51 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-24.04
+          - ubuntu-22.04  # 24.04ではなく22.04を使用
         rosdistro:
           - jazzy
 
-    runs-on: ubuntu-latest
-
-    container:
-      image: ros:${{ matrix.rosdistro }}-ros-base
+    runs-on: ${{ matrix.os }}  # コンテナではなく直接Ubuntu上で実行
 
     steps:
+      - name: Setup ROS2
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: ${{ matrix.rosdistro }}
+
       - name: Setup directories
         run: mkdir -p ros2_ws/src
-        
+
       - name: Check out repository
         uses: actions/checkout@v3
         with:
           path: ros2_ws/src/vision2motion
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
-          rosdep update && 
-          apt-get update && 
-          rosdep install --from-path . -i -y --rosdistro ${{ matrix.rosdistro }}
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-opencv
 
-      - name: Install diagnostic-updater
-        run: apt-get install ros-${{ matrix.rosdistro }}-diagnostic-updater
-
-      - name: Build tests
-        id: build_test
+      - name: Install Python dependencies
         run: |
-          . /opt/ros/${{ matrix.rosdistro }}/setup.sh && 
-          colcon build
-        continue-on-error: true
+          python3 -m pip install --upgrade pip
+          pip3 install torch torchvision transformers pillow
 
-      - name: build_test command success
-        if: steps.build_test.outcome == 'success'
-        run: echo "result - success"
+      - name: Install ROS dependencies
+        run: |
+          cd ros2_ws
+          rosdep update
+          rosdep install --from-paths src --ignore-src -y --rosdistro ${{ matrix.rosdistro }}
 
-      - name: build_test command failure
-        if: steps.build_test.outcome == 'failure'
-        run: echo "result - failure" && exit 1
-
+      - name: Build
+        run: |
+          cd ros2_ws
+          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          colcon build --symlink-install
+          
       - name: Run tests
-        id: run_test
         run: |
-          . /opt/ros/${{ matrix.rosdistro }}/setup.sh &&
-          colcon test && 
-          colcon test-result
-        continue-on-error: true
-
-      - name: run_test command success
-        if: steps.run_test.outcome == 'success'
-        run: echo "result - success"
-
-      - name: run_test command failure
-        if: steps.run_test.outcome == 'failure'
-        run: echo "result - failure" && exit 1
+          cd ros2_ws
+          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          colcon test
+          colcon test-result --verbose

@@ -14,7 +14,13 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*')))
     ],
-    install_requires=['setuptools'],
+    install_requires=[
+        'setuptools',
+        'torch',
+        'transformers',
+        'pillow',
+        'opencv-python',
+    ],
     zip_safe=True,
     maintainer='michi-tsubaki',
     maintainer_email='michi.tsubaki.tech@gmail.com',
