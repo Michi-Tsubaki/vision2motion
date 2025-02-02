@@ -16,11 +16,11 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-22.04  # 24.04ではなく22.04を使用
+          - ubuntu-22.04  # Humble用のUbuntu 22.04
         rosdistro:
-          - jazzy
+          - humble  # Jazzyから変更
 
-    runs-on: ${{ matrix.os }}  # コンテナではなく直接Ubuntu上で実行
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Setup ROS2
@@ -28,23 +28,25 @@ jobs:
         with:
           required-ros-distributions: ${{ matrix.rosdistro }}
 
-      - name: Setup directories
+      - name: Setup system
+        run: |
+          sudo apt-get update
+          sudo apt-get upgrade -y
+          sudo apt-get install -y python3-pip python3-opencv
+
+      - name: Create workspace
         run: mkdir -p ros2_ws/src
 
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
           path: ros2_ws/src/vision2motion
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip python3-opencv
-
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install torch torchvision transformers pillow
+          pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip3 install transformers pillow
 
       - name: Install ROS dependencies
         run: |
@@ -55,12 +57,13 @@ jobs:
       - name: Build
         run: |
           cd ros2_ws
-          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           colcon build --symlink-install
-          
-      - name: Run tests
+
+      - name: Test
         run: |
           cd ros2_ws
-          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          source install/setup.bash
           colcon test
           colcon test-result --verbose
